@@ -33,6 +33,7 @@ save(wcvp, file = 'wcvp_names_and_distribution.rda')
 ### 2) BGCI's PlantSearch
 #######################
 # Web scrape.
+# Note that the number of ex-situ collections needs to be contained in the column "count.gardenid." and the taxon name needs to be contained in the column "full_name". 
 #######################
 
 #######################

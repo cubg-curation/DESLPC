@@ -54,25 +54,10 @@ for(i in 1:length(gardens)){
   # Remove those with missing taxonName.
   original_report = original_report[!is.na(original_report$TaxonName),]
 
-  ### 1.4) If CUBG remove annoying characters.
-  if(grepl('CUBG',garden)){
-    original_report$TaxonNameFull[is.na(original_report$TaxonNameFull)] = original_report$TaxonName[is.na(original_report$TaxonNameFull)]
-
-    AA =stringr::str_replace_all(original_report$TaxonName,pattern = '\u00C3', replacement = '\u00D7')
-    AA =stringr::str_replace_all(AA,pattern = '^\\?', replacement = '\u00D7')
-    AA=stringr::str_replace_all(AA, pattern = '\\\u0097', replacement = '')
-    original_report$TaxonName = AA
-  }
-
-  ### 1.3) Check if `TaxonNameFull` (or the typo `TaxonNameFul`) is contained in the original report.
+  ### 1.3) Check if `TaxonNameFull` is contained in the original report.
   ### If it is not then we create a new column  called TaxonNameFull where all values are empty strings ''.
   if(!'TaxonNameFull' %in% names(original_report)){
-    if('TaxonNameFul' %in%  names(original_report)){
-      original_report$TaxonNameFull =  original_report$TaxonNameFul
-    }
-    else{
-      original_report$TaxonNameFull =  rep('', nrow(original_report))
-    }
+    original_report$TaxonNameFull =  rep('', nrow(original_report))
   }
   
   if('TaxonName_with_authors' %in% names(original_report)){
@@ -83,7 +68,6 @@ for(i in 1:length(gardens)){
   original_report$TaxonName = stringr::str_replace_all(original_report$TaxonName,'◊','\u00D7')
   if('TaxonNameFull' %in% names(original_report)){
     original_report$TaxonNameFull = stringr::str_replace_all(original_report$TaxonNameFull,'◊','\u00D7')
-    taxon_name_full_column = 'TaxonNameFull'
   }
 
   ############
@@ -95,11 +79,10 @@ for(i in 1:length(gardens)){
                                       iucnRedlist = IUCN_redlist,
                                       BGCI = Garden_count,
                                       taxon_name_column = 'TaxonName',
-                                      taxon_name_full_column = taxon_name_full_column,
+                                      taxon_name_full_column = 'TaxonNameFull',
                                       do_is_autonym = FALSE, # Not required.
                                       do_status_year = TRUE,
                                       do_taxon_types = TRUE,
-                                      # typo_method = 'Data frame only'
                                       typo_method = 'All'
                                       )
 
