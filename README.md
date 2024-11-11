@@ -41,6 +41,8 @@ For the single demo dataset the R-scripts should take approximately the followin
 
 install_packages.R ~ 1 hour.
 
+Create_datasets.R ~ 10 hours.
+
 enrich_original_reports.R: (After enrichment datasets created) ~ 2 minutes.
 
 create_meta_collection.R: ~ 1s

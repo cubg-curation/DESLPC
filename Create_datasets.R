@@ -198,4 +198,86 @@ save(wcvp, file = 'wcvp_with_redlist_tree.rda')
 
 #######################
 
+#######################
+### 6) Redlist history
+#######################
+
+### Add history for those that are currently threatened.
+IUCN_redlist_threatened_ids = IUCN_redlist$taxonid[IUCN_redlist$category %in% c('VU', 'EN', 'CR', 'EW', 'EX')]
+
+assessment_history = list()
+for(i in 1:length(IUCN_redlist_threatened_ids)){
+  if(i %%10 == 0){print(i)}
+  if(i %%1000 == 0){save(assessment_history, file = 'assessment_history.rda')
+  }
+  Sys.sleep(0.5)
+  assessment_history[[i]] = rredlist::rl_history(id = IUCN_redlist_threatened_ids[i], key = key)
+}
+save(assessment_history, file = 'assessment_history.rda')
+
+# Find all unique codes/categories.
+codes = unique(toupper(unlist(lapply(assessment_history, function(x){
+  # x = assessment_history[[1]]
+  if('EX/E' %in% toupper(x$result$code)){y <<- x}
+  
+  x$result$code
+}))))
+cats = unique(tolower(unlist(lapply(assessment_history, function(x){
+  # x = assessment_history[[1]]
+  x$result$category
+}))))
+combos = unlist(lapply(assessment_history, function(x){
+  # x = assessment_history[[1]]
+  paste0(x$result$code, collapse = ', ')
+}))
+
+min_year = sort(unique(unlist(lapply(assessment_history, function(x){
+  # x = assessment_history[[1]]
+  x$result$year
+}))),decreasing = T)
+which(grepl('EN, DD, V, DD', combos))
+IUCN_redlist[IUCN_redlist$taxonid == as.numeric(assessment_history[[20200]][[1]]),]
+year_column = 'assess_year'
+
+# Get the dates when each plant is threatened.
+threat_hist = pbapply::pblapply(assessment_history, function(history){
+  plant = IUCN_redlist$scientific_name[IUCN_redlist$taxonid == as.numeric(history$name)]
+  id = as.numeric(history$name)
+  
+  result = history$result
+  current = result[1,]
+  current[c(1,2)] = as.numeric(format(Sys.Date(),'%Y'))
+  result = rbind(current, result)
+  
+  threatened = rep(FALSE, nrow(result))
+  threatened[toupper(result$code) %in% c('VU', 'E','CR','EN','V','R','EW','EX','EX/E')] = TRUE
+  result$threatened  = threatened
+  consec = split(which(threatened),cumsum(c(1,diff(which(threatened))!=1)))
+  mess = ''
+  for(ii in 1:length(consec)){
+    mess = 
+      paste0(mess,result[[year_column]][max(consec[[ii]])], '-', result[[year_column]][max(min(consec[[ii]])-1, 1)], ', ' )
+  }
+  mess <- stringr::str_remove(mess,', $')
+  
+  return(c(id, plant, mess))
+}) |>
+  data.frame() |>
+  t() |>
+  data.frame()
+row.names(threat_hist) = 1:nrow(threat_hist)
+names(threat_hist) = c('ID', 'Scientific Name', 'Threatened History')
+
+
+first_assessed = rep('', nrow(threat_hist))
+first_assessed[grepl('2023',threat_hist$`Threatened History`)] = as.numeric(stringr::str_extract(threat_hist$`Threatened History`[grepl('2023',threat_hist$`Threatened History`)],'[0-9]{4}'))
+first_assessed = as.numeric(first_assessed)
+threat_hist$first_assessed = first_assessed
+
+names(threat_hist) = c('ID', 'Scientific Name', 'Threatened History', 'First Assessed As Threatened')
+threat_hist$`Threatened History`[threat_hist$`Threatened History` == 'NA-NA'] = 'Never Threatened'
+
+writexl::write_xlsx(threat_hist,path = 'RedList_threatened_history.xlsx')
+
+#######################
 setwd(OG_dir)
